@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# DB files
+*.db
+*.sqlite3
+
+# Large model files
+router_model/model.safetensors
+router_model/*.bin
+
+# ChromaDB binary files
+chroma_db/
+
+# Temp files
+*.tmp.*
+*.tmp
+
+# Claude internal
+.claude/settings.local.json
+.omc/
+
+# OS
+.DS_Store
+Thumbs.db

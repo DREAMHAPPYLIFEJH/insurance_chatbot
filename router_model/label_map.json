@@ -1,0 +1,14 @@
+{
+  "label2id": {
+    "recommendation": 0,
+    "product_info": 1,
+    "special_terms": 2,
+    "general_qa": 3
+  },
+  "id2label": {
+    "0": "recommendation",
+    "1": "product_info",
+    "2": "special_terms",
+    "3": "general_qa"
+  }
+}

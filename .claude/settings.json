@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python -c \"from langchain_core.prompts import PromptTemplate; print\\('ok'\\)\")",
+      "Bash(python -c \"from langchain.memory import ConversationBufferMemory; print\\('ok'\\)\")",
+      "Bash(python -c \"from langchain_community.llms import HuggingFacePipeline; print\\('ok'\\)\")",
+      "Bash(gh *)",
+      "Bash(git *)"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+.claude
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+.omc
+router_train.csv
+chunks_preview.csv
+pdfs

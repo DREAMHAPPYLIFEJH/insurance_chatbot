@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    command: uvicorn api_server:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./insurance.db:/app/insurance.db
+      - ./router_model:/app/router_model
+      - hf_cache:/app/.cache/huggingface
+    environment:
+      - HF_HOME=/app/.cache/huggingface
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ui:
+    build: .
+    command: streamlit run chatbot_ui.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./insurance.db:/app/insurance.db
+    environment:
+      - API_BASE=http://api:8000/api
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  hf_cache:

@@ -1,0 +1,174 @@
+from io import BytesIO
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+FONT_PATH = "C:/Windows/Fonts/NanumGothic.ttf"
+FONT_BOLD_PATH = "C:/Windows/Fonts/NanumGothic.ttf"
+
+PAGE_W, PAGE_H = A4          # 595.27, 841.89
+MARGIN = 20 * mm
+TABLE_W = PAGE_W - MARGIN * 2
+LABEL_W = TABLE_W * 0.35
+VALUE_W = TABLE_W * 0.65
+ROW_H = 8 * mm
+
+
+def _register_fonts():
+    if "Korean" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("Korean", FONT_PATH))
+    if "KoreanBold" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("KoreanBold", FONT_BOLD_PATH))
+
+
+def _draw_header(c: canvas.Canvas, design_no: str, now_str: str):
+    # 상단 파란 띠
+    c.setFillColor(colors.HexColor("#0d2b5e"))
+    c.rect(0, PAGE_H - 22 * mm, PAGE_W, 22 * mm, fill=1, stroke=0)
+
+    c.setFont("KoreanBold", 14)
+    c.setFillColor(colors.white)
+    c.drawString(MARGIN, PAGE_H - 14 * mm, "동양생명 가입설계서")
+
+    c.setFont("Korean", 8)
+    c.drawRightString(PAGE_W - MARGIN, PAGE_H - 10 * mm, f"설계번호: {design_no}")
+    c.drawRightString(PAGE_W - MARGIN, PAGE_H - 16 * mm, f"발행일시: {now_str}")
+
+
+def _draw_section_title(c: canvas.Canvas, y: float, title: str) -> float:
+    c.setFillColor(colors.HexColor("#e8eef7"))
+    c.rect(MARGIN, y - 6 * mm, TABLE_W, 7 * mm, fill=1, stroke=0)
+    c.setFont("KoreanBold", 10)
+    c.setFillColor(colors.HexColor("#0d2b5e"))
+    c.drawString(MARGIN + 3 * mm, y - 4 * mm, title)
+    return y - 7 * mm
+
+
+def _clean(value: str) -> str:
+    return str(value).replace("**", "").strip()
+
+
+def _draw_row(c: canvas.Canvas, y: float, label: str, value: str, shade: bool = False) -> float:
+    value = _clean(value)
+    if shade:
+        c.setFillColor(colors.HexColor("#f7f9fc"))
+        c.rect(MARGIN, y - ROW_H, TABLE_W, ROW_H, fill=1, stroke=0)
+
+    # 테두리
+    c.setStrokeColor(colors.HexColor("#d0d8e8"))
+    c.setLineWidth(0.4)
+    c.rect(MARGIN, y - ROW_H, TABLE_W, ROW_H, fill=0, stroke=1)
+    # 라벨/값 구분선
+    c.line(MARGIN + LABEL_W, y - ROW_H, MARGIN + LABEL_W, y)
+
+    c.setFont("KoreanBold", 9)
+    c.setFillColor(colors.HexColor("#4a5568"))
+    c.drawString(MARGIN + 3 * mm, y - 5.5 * mm, label)
+
+    c.setFont("Korean", 9)
+    c.setFillColor(colors.HexColor("#1a202c"))
+    c.drawString(MARGIN + LABEL_W + 3 * mm, y - 5.5 * mm, value)
+
+    return y - ROW_H
+
+
+def _draw_notice(c: canvas.Canvas, y: float) -> float:
+    notices = [
+        "※ 이 설계서는 참고용이며 정식 계약서가 아닙니다.",
+        "※ 실제 보험료는 심사 결과에 따라 달라질 수 있습니다.",
+        "※ 청약 후 15일 이내 청약철회가 가능합니다.",
+        "※ 이 보험계약은 예금자보호법에 따라 보호됩니다.",
+    ]
+    c.setFillColor(colors.HexColor("#fff8e1"))
+    box_h = len(notices) * 5.5 * mm + 6 * mm
+    c.rect(MARGIN, y - box_h, TABLE_W, box_h, fill=1, stroke=0)
+    c.setStrokeColor(colors.HexColor("#f6ad55"))
+    c.setLineWidth(0.5)
+    c.rect(MARGIN, y - box_h, TABLE_W, box_h, fill=0, stroke=1)
+
+    c.setFont("Korean", 8)
+    c.setFillColor(colors.HexColor("#744210"))
+    ty = y - 4 * mm
+    for line in notices:
+        c.drawString(MARGIN + 3 * mm, ty, line)
+        ty -= 5.5 * mm
+    return y - box_h - 4 * mm
+
+
+def generate_pdf(design_no: str, design_data: dict, customer_info: dict, fc_name: str) -> bytes:
+    """
+    design_data  : session_state.design_data (product_name, product_group, product_type,
+                   payment_period, insurance_period, payment_cycle, amount, monthly_premium, coverage)
+    customer_info: {"name": str, "birth": str, "gender": str}
+    fc_name      : session_state.fc_name
+    """
+    _register_fonts()
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # ── 헤더
+    _draw_header(c, design_no, now_str)
+
+    y = PAGE_H - 28 * mm
+
+    # ── 고객 / FC 정보
+    y = _draw_section_title(c, y, "고객 및 담당 FC 정보")
+    rows_customer = [
+        ("고객명",     customer_info.get("name", "미입력")),
+        ("생년월일",   customer_info.get("birth", "미입력")),
+        ("성별",       customer_info.get("gender", "미입력")),
+        ("담당 FC",    fc_name),
+    ]
+    for i, (label, value) in enumerate(rows_customer):
+        y = _draw_row(c, y, label, value, shade=(i % 2 == 0))
+
+    y -= 6 * mm
+
+    # ── 상품 보장 내용
+    y = _draw_section_title(c, y, "상품 보장 내용")
+    coverage_str = "  /  ".join(design_data.get("coverage", [])) or "정보 없음"
+    rows_product = [
+        ("상품명",         design_data.get("product_name", "-")),
+        ("상품군",         design_data.get("product_group", "-")),
+        ("상품유형",       design_data.get("product_type", "-")),
+        ("납입기간",       design_data.get("payment_period", "-")),
+        ("보험기간",       design_data.get("insurance_period", "-")),
+        ("납입주기",       design_data.get("payment_cycle", "-")),
+        ("가입금액",       f"{design_data.get('amount', 0):,}만원"),
+        ("예상 월납보험료", f"{design_data.get('monthly_premium', 0):,}원"),
+        ("주요 보장",      coverage_str),
+    ]
+    for i, (label, value) in enumerate(rows_product):
+        y = _draw_row(c, y, label, value, shade=(i % 2 == 0))
+
+    y -= 10 * mm
+
+    # ── 법적 고지문구
+    y = _draw_notice(c, y)
+
+    # ── 하단 서명란
+    y -= 6 * mm
+    c.setStrokeColor(colors.HexColor("#d0d8e8"))
+    c.setLineWidth(0.5)
+    sig_w = (TABLE_W - 10 * mm) / 2
+    for i, label in enumerate(["고객 서명", "담당 FC 서명"]):
+        x = MARGIN + i * (sig_w + 10 * mm)
+        c.rect(x, y - 15 * mm, sig_w, 15 * mm, stroke=1, fill=0)
+        c.setFont("Korean", 8)
+        c.setFillColor(colors.HexColor("#718096"))
+        c.drawString(x + 3 * mm, y - 5 * mm, label)
+
+    # ── 푸터
+    c.setFont("Korean", 7)
+    c.setFillColor(colors.HexColor("#a0aec0"))
+    c.drawCentredString(PAGE_W / 2, 10 * mm, "동양생명보험주식회사  |  본 설계서는 AI 분석 기반 참고 자료입니다.")
+
+    c.save()
+    buffer.seek(0)
+    return buffer.read()

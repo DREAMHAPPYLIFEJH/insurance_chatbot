@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+httpx
+streamlit
+pdfplumber
+chromadb
+sentence-transformers
+torch
+transformers>=4.43.0
+accelerate
+langchain
+langchain-community
+langchain-core
+PyJWT
+scikit-learn
+reportlab
