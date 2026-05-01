@@ -20,6 +20,7 @@ def run(user_input: str) -> dict:
 
 [답변] (3~5문장으로 간결하게)"""
 
+    print(f"  [프롬프트] 총 길이: {len(prompt)}자")
     response = _run_llm(prompt, max_new_tokens=256)
 
     return {

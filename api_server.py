@@ -62,7 +62,10 @@ async def lifespan(app: FastAPI):
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         await loop.run_in_executor(pool, _warmup_all)
     print("[서버] 모델 사전 로딩 완료 — 요청 수신 시작")
-    yield
+    try:
+        yield
+    except asyncio.CancelledError:
+        pass
 
 
 # ─────────────────────────────────────────

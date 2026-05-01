@@ -25,3 +25,8 @@ chroma_db/
 # OS
 .DS_Store
 Thumbs.db
+
+# 첨부 산출물 (외부 저작물 / 회사 정책상 비공개)
+논문/
+*.pptx
+*.hwp
